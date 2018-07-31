@@ -583,7 +583,7 @@ static NSString *const timedMetadata = @"timedMetadata";
   }
 
   if (_repeat) {
-    [self setSeek:0.0];
+    [self setCurrentTime:0.0];
     // Not sure this is needed:
     [self applyModifiers];
   } else {
