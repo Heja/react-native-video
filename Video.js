@@ -201,7 +201,7 @@ export default class Video extends Component {
     }
 
     const isNetwork = !!(uri && uri.match(/^https?:/));
-    const isAsset = !!(uri && uri.match(/^(assets-library|file|content|ms-appx|ms-appdata):/));
+    const isAsset = !!(uri && uri.match(/^(assets-library|ipod-library|file|content|ms-appx|ms-appdata):/));
 
     let nativeResizeMode;
     if (resizeMode === VideoResizeMode.stretch) {
@@ -248,35 +248,21 @@ export default class Video extends Component {
       onAudioBecomingNoisy: this._onAudioBecomingNoisy,
     });
 
-    if (this.props.poster && this.state.showPoster) {
-      const posterStyle = {
-        position: 'absolute',
-        left: 0,
-        top: 0,
-        right: 0,
-        bottom: 0,
-        resizeMode: this.props.posterResizeMode || 'contain'
-      };
-
-      return (
-        <View style={nativeProps.style}>
-          <RCTVideo
-            ref={this._assignRoot}
-            {...nativeProps}
-          />
-          <Image
-            style={posterStyle}
-            source={{uri: this.props.poster}}
-          />
-        </View>
-      );
-    }
+    const posterStyle = {
+      ...StyleSheet.absoluteFillObject,
+      resizeMode: this.props.posterResizeMode || 'contain',
+    };
 
     return (
-      <RCTVideo
-        ref={this._assignRoot}
-        {...nativeProps}
-      />
+      <React.Fragment>
+        <RCTVideo ref={this._assignRoot} {...nativeProps} />
+        {this.props.poster &&
+          this.state.showPoster && (
+            <View style={nativeProps.style}>
+              <Image style={posterStyle} source={{ uri: this.props.poster }} />
+            </View>
+          )}
+      </React.Fragment>
     );
   }
 }
@@ -345,6 +331,12 @@ Video.propTypes = {
   paused: PropTypes.bool,
   muted: PropTypes.bool,
   volume: PropTypes.number,
+  bufferConfig: PropTypes.shape({
+    minBufferMs: PropTypes.number,
+    maxBufferMs: PropTypes.number,
+    bufferForPlaybackMs: PropTypes.number,
+    bufferForPlaybackAfterRebufferMs: PropTypes.number,
+  }),
   stereoPan: PropTypes.number,
   rate: PropTypes.number,
   playInBackground: PropTypes.bool,
