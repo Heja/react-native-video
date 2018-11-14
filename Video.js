@@ -51,6 +51,8 @@ export default class Video extends Component {
   }
 
   seek = (time, tolerance = 100) => {
+    if (isNaN(time)) throw new Error('Specified time is not a number');
+    
     if (Platform.OS === 'ios') {
       this.setNativeProps({
         seek: {
@@ -172,6 +174,12 @@ export default class Video extends Component {
       this.props.onPlaybackRateChange(event.nativeEvent);
     }
   };
+  
+  _onExternalPlaybackChange = (event) => {
+    if (this.props.onExternalPlaybackChange) {
+      this.props.onExternalPlaybackChange(event.nativeEvent);
+    }
+  }
 
   _onAudioBecomingNoisy = () => {
     if (this.props.onAudioBecomingNoisy) {
@@ -236,6 +244,7 @@ export default class Video extends Component {
       onVideoBuffer: this._onBuffer,
       onTimedMetadata: this._onTimedMetadata,
       onVideoAudioBecomingNoisy: this._onAudioBecomingNoisy,
+      onVideoExternalPlaybackChange: this._onExternalPlaybackChange,
       onVideoFullscreenPlayerWillPresent: this._onFullscreenPlayerWillPresent,
       onVideoFullscreenPlayerDidPresent: this._onFullscreenPlayerDidPresent,
       onVideoFullscreenPlayerWillDismiss: this._onFullscreenPlayerWillDismiss,
@@ -284,6 +293,7 @@ Video.propTypes = {
   onVideoEnd: PropTypes.func,
   onTimedMetadata: PropTypes.func,
   onVideoAudioBecomingNoisy: PropTypes.func,
+  onVideoExternalPlaybackChange: PropTypes.func,
   onVideoFullscreenPlayerWillPresent: PropTypes.func,
   onVideoFullscreenPlayerDidPresent: PropTypes.func,
   onVideoFullscreenPlayerWillDismiss: PropTypes.func,
@@ -346,6 +356,8 @@ Video.propTypes = {
   controls: PropTypes.bool,
   audioOnly: PropTypes.bool,
   currentTime: PropTypes.number,
+  fullscreenAutorotate: PropTypes.bool,
+  fullscreenOrientation: PropTypes.oneOf(['all','landscape','portrait']),
   progressUpdateInterval: PropTypes.number,
   useTextureView: PropTypes.bool,
   onLoadStart: PropTypes.func,
@@ -365,6 +377,7 @@ Video.propTypes = {
   onPlaybackRateChange: PropTypes.func,
   onAudioFocusChanged: PropTypes.func,
   onAudioBecomingNoisy: PropTypes.func,
+  onExternalPlaybackChange: PropTypes.func,
 
   /* Required by react-native */
   scaleX: PropTypes.number,

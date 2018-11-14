@@ -3,10 +3,16 @@
 A `<Video>` component for react-native, as seen in
 [react-native-login](https://github.com/brentvatne/react-native-login)!
 
-Requires react-native >= 0.40.0
+Version 4.x requires react-native >= 0.57.0
+
+Version 3.x requires react-native >= 0.40.0
 
 ### Version 4.0.0 breaking changes
-Version 4.0.0 now requires Android SDK 26 or higher to use ExoPlayer. This is the default version as of React Native 0.56 and will be required by Google for all apps in October 2018.
+Version 4.0.0 changes some behaviors and may require updates to your Gradle files.  See [Updating](#updating) for details.
+
+Version 4.0.0 now requires Android SDK 26+ and Gradle 3 plugin in order to support ExoPlayer 2.9.0. Google is dropping support for apps using SDKs older than 26 as of October 2018 and Gradle 2 as of January 2019. React Native 0.57 defaults to Gradle 3 & SDK 27.
+
+If you need to support an older React Native version, you should use react-native-video 3.2.1.
 
 ### Version 3.0.0 breaking changes
 Version 3.0 features a number of changes to existing behavior. See [Updating](#updating) for changes.
@@ -193,7 +199,7 @@ using System.Collections.Generic;
 </details>
 
 <details>
-  <summary>DOM</summary>
+  <summary>react-native-dom</summary>
 
 Make the following additions to the given files manually:
 
@@ -253,7 +259,11 @@ var styles = StyleSheet.create({
 * [audioOnly](#audioonly)
 * [bufferConfig](#bufferconfig)
 * [controls](#controls)
+* [fullscreen](#fullscreen)
+* [fullscreenAutorotate](#fullscreenautorotate)
+* [fullscreenOrientation](#fullscreenorientation)
 * [headers](#headers)
+* [id](#id)
 * [ignoreSilentSwitch](#ignoresilentswitch)
 * [muted](#muted)
 * [paused](#paused)
@@ -276,6 +286,7 @@ var styles = StyleSheet.create({
 ### Event props
 * [onAudioBecomingNoisy](#onaudiobecomingnoisy)
 * [onEnd](#onend)
+* [onExternalPlaybackChange](#onexternalplaybackchange)
 * [onFullscreenPlayerWillPresent](#onfullscreenplayerwillpresent)
 * [onFullscreenPlayerDidPresent](#onfullscreenplayerdidpresent)
 * [onFullscreenPlayerWillDismiss](#onfullscreenplayerwilldismiss)
@@ -339,7 +350,27 @@ Determines whether to show player controls.
 
 Note on iOS, controls are always shown when in fullscreen mode.
 
-Platforms: DOM, iOS
+Platforms: iOS, react-native-dom
+
+#### fullscreen
+Controls whether the player enters fullscreen on play.
+* **false (default)** - Don't display the video in fullscreen
+* **true** - Display the video in fullscreen
+
+Platforms: iOS
+
+#### fullscreenAutorotate
+If a preferred [fullscreenOrientation](#fullscreenorientation) is set, causes the video to rotate to that orientation but permits rotation of the screen to orientation held by user. Defaults to TRUE.
+
+Platforms: iOS
+
+#### fullscreenOrientation
+
+* **all (default)** - 
+* **landscape**
+* **portrait**
+
+Platforms: iOS
 
 #### headers
 Pass headers to the HTTP client. Can be used for authorization.
@@ -348,13 +379,23 @@ To enable this on iOS, you will need to manually edit RCTVideo.m and uncomment t
 
 Example:
 ```
-headers = {{
+headers={{
   Authorization: 'bearer some-token-value',
   'X-Custom-Header': 'some value'
 }}
 ```
 
 Platforms: Android ExoPlayer
+
+#### id
+Set the DOM id element so you can use document.getElementById on web platforms. Accepts string values.
+
+Example:
+```
+id="video"
+```
+
+Platforms: react-native-dom
 
 #### ignoreSilentSwitch
 Controls the iOS silent switch behavior
@@ -609,14 +650,16 @@ textTracks={[
 Platforms: Android ExoPlayer, iOS
 
 #### useTextureView
-Output to a TextureView instead of the default SurfaceView. In general, you will want to use SurfaceView because it is more efficient and provides better performance. However, SurfaceViews has two limitations:
+Controls whether to output to a TextureView or SurfaceView.
+
+SurfaceView is more efficient and provides better performance but has two limitations:
 * It can't be animated, transformed or scaled
 * You can't overlay multiple SurfaceViews
 
 useTextureView can only be set at same time you're setting the source.
 
-* **false (default)** - Use a SurfaceView
-* **true** - Use a TextureView
+* **true (default)** - Use a TextureView
+* **false** - Use a SurfaceView
 
 Platforms: Android ExoPlayer
 
@@ -643,6 +686,24 @@ Callback function that is called when the player reaches the end of the media.
 Payload: none
 
 Platforms: all
+
+#### onExternalPlaybackChange
+Callback function that is called when external playback mode for current playing video has changed. Mostly useful when connecting/disconnecting to Apple TV – it's called on connection/disconnection.
+
+Payload:
+
+Property | Type | Description
+--- | --- | ---
+isExternalPlaybackActive | boolean | Boolean indicating whether external playback mode is active
+
+Example:
+```
+{
+  isExternalPlaybackActive: true
+}
+```
+
+Platforms: iOS
 
 #### onFullscreenPlayerWillPresent
 Callback function that is called when the player is about to enter fullscreen mode.
@@ -738,7 +799,7 @@ Example:
 Platforms: all
 
 #### onProgress
-Callback function that is called every progressInterval seconds with info about which position the media is currently playing.
+Callback function that is called every progressUpdateInterval seconds with info about which position the media is currently playing.
 
 Property | Type | Description
 --- | --- | ---
@@ -927,7 +988,35 @@ To enable audio to play in background on iOS the audio session needs to be set t
 
 ## Updating
 
-### Version 3.0
+### Version 4.0.0
+
+#### Gradle 3 and SDK 26 requirement
+In order to support ExoPlayer 2.9.0, you must use version 3 or higher of the Gradle plugin. This is included by default in React Native 0.57. ExoPlayer 
+
+#### ExoPlayer 2.9.0 Java 1.8 requirement
+ExoPlayer 2.9.0 uses some Java 1.8 features, so you may need to enable support for Java 1.8 in your app/build.gradle file. If you get an error, compiling with ExoPlayer like:
+`Default interface methods are only supported starting with Android N (--min-api 24)`
+
+Add the following to your app/build.gradle file:
+```
+android {
+   ... // Various other settings go here
+   compileOptions {
+     targetCompatibility JavaVersion.VERSION_1_8
+   }
+}
+```
+
+#### ExoPlayer no longer detaches
+When using a router like the react-navigation TabNavigator, switching between tab routes would previously cause ExoPlayer to detach causing the video player to pause. We now don't detach the view, allowing the video to continue playing in a background tab. This matches the behavior for iOS. Android MediaPlayer will crash if it detaches when switching routes, so its behavior has not been changed.
+
+#### useTextureView now defaults to true
+The SurfaceView, which ExoPlayer has been using by default has a number of quirks that people are unaware of and often cause issues. This includes not supporting animations or scaling. It also causes strange behavior if you overlay two videos on top of each other, because the SurfaceView will [punch a hole](https://developer.android.com/reference/android/view/SurfaceView) through other views. Since TextureView doesn't have these issues and behaves in the way most developers expect, it makes sense to make it the default.
+
+TextureView is not as fast as SurfaceView, so you may still want to enable SurfaceView support. To do this, you can set `useTextureView={false}`.
+
+
+### Version 3.0.0
 
 #### All platforms now auto-play
 Previously, on Android ExoPlayer if the paused prop was not set, the media would not automatically start playing. The only way it would work was if you set `paused={false}`. This has been changed to automatically play if paused is not set so that the behavior is consistent across platforms.
